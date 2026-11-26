@@ -1,5 +1,7 @@
 # GitHub Pages へ公開（main に push するたびに公開し直す）
 # このリポジトリにはビルド済みのゲームだけが入っています（開発用リポジトリから tools/publish/publish.mjs で反映）。
+# アップロードと公開を別のジョブに分けています（公式テンプレートと同じ形。公開ジョブは、アップロードが
+# 完了してから始まるので「artifact が見つからない」失敗が起きにくい）。
 name: Deploy to GitHub Pages
 on:
   push:
@@ -13,16 +15,20 @@ concurrency:
   group: pages
   cancel-in-progress: false
 jobs:
-  deploy:
+  upload:
     runs-on: ubuntu-24.04
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
+  deploy:
+    needs: upload
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
         uses: actions/deploy-pages@v4
